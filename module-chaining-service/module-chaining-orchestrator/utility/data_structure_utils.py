@@ -3,7 +3,7 @@ import json
 
 
 class TreeUtility:
-    def create_tree_from_dict(self, input_dict):
+    def create_tree_from_dict(self, input_dict) -> treelib.Tree:
         task_tree = treelib.Tree(identifier=input_dict["taskChainId"])
         self.create_tree_using_recursion(input_dict, task_tree)
         return task_tree
@@ -11,10 +11,10 @@ class TreeUtility:
     def create_tree_using_recursion(self, input_dict, task_tree, parent=None):
         task = input_dict["task"]
         node_data = {
-            "name_of_task": task["name_of_task"],
+            "name_of_task": task["task_name"],
             "scope": task["scope"],
-            "is_task_mandatory": task["is_task_mandatory"],
-            "parameters_list": task["parameters_list"],
+            "is_task_mandatory": task["isMandatory"],
+            "parameters_list": task["parameters"],
             "status": "yet to run"
         }
 
