@@ -2,6 +2,10 @@ from queue import Queue, Full, Empty
 
 
 class Module_Chaining_Queue:
+    """
+    serves as a single ready queue for all the task-trees
+    """
+
     def __init__(self, maxsize=10):
         self.MAXSIZE = maxsize
         self.shared_ready_job_queue = Queue(maxsize=self.MAXSIZE)
