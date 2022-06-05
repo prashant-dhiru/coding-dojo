@@ -1,0 +1,47 @@
+{
+  "taskChain": {
+    "taskChainId": "TC001",
+    "task": {
+      "task_name": "COC",
+      "scope": "CELL1, CELL2",
+      "isMandatory": true,
+      "parameters": {
+        "param1": "value1"
+      },
+      "children": [
+        {
+          "task": {
+            "task_name": "PRACH",
+            "scope": "CELL1, CELL2",
+            "isMandatory": true,
+            "parameters": {
+              "param1": "value1"
+            }
+          }
+        },
+        {
+          "task": {
+            "task_name": "CCCO",
+            "scope": "CELL1, CELL2",
+            "isMandatory": true,
+            "parameters": {
+              "param1": "value1"
+            },
+            "children": [
+              {
+                "task": {
+                  "task_name": "ANR",
+                  "scope": "CELL1, CELL2",
+                  "isMandatory": true,
+                  "parameters": {
+                    "param1": "value1"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
