@@ -2,7 +2,6 @@ import json
 import random
 import time
 from datetime import datetime
-from queue import Queue
 from threading import Thread
 from typing import Set, List
 
