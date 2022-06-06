@@ -81,13 +81,3 @@ class Task_Thread(Thread):
         print(f"starting {name} module at {current_time} with scope of cells {scope} and config {config}")
         time.sleep(random.randint(30, 60))
         print(f"completed {name} module at {current_time} with scope of cells {scope} and config {config}")
-
-
-if __name__ == "__main__":
-    file_path = "/home/pdhirend/repos/coding-dojo/module-chaining-service/module-chaining-orchestrator/trigger_task.json"
-    with open(file_path) as json_file:
-        input_json = json.load(json_file)
-
-    module_chaining_orchestrator = Module_Chaining_Orchestrator(input_json)
-    module_chaining_orchestrator.trigger_chain_task()
-    print()
