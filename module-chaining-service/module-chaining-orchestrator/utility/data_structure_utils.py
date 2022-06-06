@@ -11,10 +11,10 @@ class TreeUtility:
     def create_tree_using_recursion(self, input_dict, task_tree, parent=None):
         task = input_dict["task"]
         node_data = {
-            "name_of_task": task["task_name"],
+            "task_name": task["task_name"],
             "scope": task["scope"],
-            "is_task_mandatory": task["isMandatory"],
-            "parameters_list": task["parameters"],
+            "isMandatory": task["isMandatory"],
+            "parameters": task["parameters"],
             "status": "yet to run"
         }
 
