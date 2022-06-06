@@ -1,30 +1,32 @@
 import asyncio
+import json
 import time
 import unittest
 
 from treelib import Tree, Node
 
 from module_chaining_orchestrator2 import Module_Chaining_Orchestrator
+from utility.data_structure_utils import TreeUtility
 
 
 class MyTestCase(unittest.TestCase):
     def test_module_chaining_queue(self):
-        tree = Tree()
-        tree.add_node(
-            Node('1', '1', data={"task_name": 1, "scope": 1, "isMandatory": 1, "parameters": 1, "status": "pending"}))
-        tree.add_node(
-            Node('2', '2', data={"task_name": 2, "scope": 2, "isMandatory": 2, "parameters": 2, "status": "pending"}),
-            parent='1')
-        tree.add_node(
-            Node('3', '3', data={"task_name": 3, "scope": 3, "isMandatory": 3, "parameters": 3, "status": "pending"}),
-            parent='1')
-        tree.add_node(
-            Node('4', '4', data={"task_name": 4, "scope": 4, "isMandatory": 4, "parameters": 4, "status": "pending"}),
-            parent='3')
+        # tree = Tree()
+        # tree.add_node( Node('A', 'A', data={"task_name": "A", "scope": "cell1, cell2", "isMandatory": True, "parameters": 1, "status": "pending"}))
+        # tree.add_node(Node('B', 'B', data={"task_name": "B", "scope": "cell1, cell2", "isMandatory": False, "parameters": 2, "status": "pending"}), parent='A')
+        # tree.add_node(Node('C', 'C', data={"task_name": "C", "scope": "cell3, cell4", "isMandatory": True, "parameters": 3, "status": "pending"}), parent='A')
+        # tree.add_node(Node('D', 'D', data={"task_name": "D", "scope": "cell1, cell2", "isMandatory": True, "parameters": 4, "status": "pending"}), parent='C')
+
+        file_path = "/home/pdhirend/repos/coding-dojo/module-chaining-service/module-chaining-orchestrator/trigger_task.json"
+        with open(file_path) as json_file:
+            input_json = json.load(json_file)
+
+        tree_util = TreeUtility()
+        tree = tree_util.create_tree_from_dict(input_json['taskChain'])
 
         module_chaining_orchestrator = Module_Chaining_Orchestrator()
         module_chaining_orchestrator.add_job_tree(tree)
-
+        module_chaining_orchestrator.start_module_trigger()
 
 
 if __name__ == '__main__':
