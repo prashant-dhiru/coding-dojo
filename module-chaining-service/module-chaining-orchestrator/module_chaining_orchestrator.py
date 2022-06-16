@@ -1,83 +1,93 @@
-import json
 import random
 import time
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import datetime
-from threading import Thread
-from typing import Set, List
+from queue import Queue, Full
+from typing import Dict
 
 from treelib import Tree, Node
 
-from utility.data_structure_utils import TreeUtility
+from utility.data_structure_utils import TaskStatusType, TaskData
+
+IS_RUNNING = True
+WAIT_TO_CHECK_READY_QUEUE_SECS = 30
 
 
-class Module_Chaining_Orchestrator:
-    def __init__(self, input_dict):
-        tree_utility = TreeUtility()
-        self.initial_dict = input_dict['taskChain']
-        self.task_tree = tree_utility.create_tree_from_dict(self.initial_dict)
-        self.running_job_pool: Set[Task_Thread] = set()
-        self.completed_job_list: List[Task_Thread] = list()
+@dataclass
+class QueueTask:
+    tree_id: str
+    node: Node
 
-    def trigger_chain_task(self):
-        root_thread = self._get_thread_from_tree_node(self.task_tree.get_node(self.task_tree.root))
-        root_thread.start()
-        self.running_job_pool.add(root_thread)
-        self.update_chain_task_after_every_timeout(5)
-        print()
 
-    def update_chain_task_after_every_timeout(self, timeout=10):
-        while time.sleep(timeout) or self.jobs_in_running_job_pool():
-            self.update_chain_task()
+class ModuleChainingOrchestrator:
+    def __init__(self):
+        self.ready_queue = Queue(maxsize=100)
+        self.job_tree_collection: Dict[str, Tree] = dict()
+        self.process_pool_executor = ThreadPoolExecutor(max_workers=10)
 
-    def update_chain_task(self):
-        self.completed_job_list: List[Task_Thread] = list()
+    def add_tree_to_orchestrator(self, task_tree: Tree):
+        self._update_task_tree_collection(task_tree)
+        task = self._create_queue_task_from_node(task_tree, task_tree.get_node(task_tree.root))
+        self._insert_task_to_ready_queue(task)
 
-        # find all the task completed
-        for task_thread in self.running_job_pool:
-            if not task_thread.is_alive():
-                self.completed_job_list.append(task_thread)
-
-        # find child, run and add into the pool
-        for completed_thread in self.completed_job_list:
-            completed_node = self.task_tree.get_node(completed_thread.task_name)
-            child_nodes_of_completed_thread = self.task_tree.children(completed_node.data.get('name_of_task'))
-            child_threads_of_completed_thread = [self._get_thread_from_tree_node(child_node) for child_node in
-                                                 child_nodes_of_completed_thread]
-            # run and update the pool
-            for child_thread in child_threads_of_completed_thread:
-                child_thread.start()
-
-            self.running_job_pool.update(child_threads_of_completed_thread)
-
-        # remove the task from the pool
-        for thread in self.completed_job_list:
-            self.running_job_pool.remove(thread)
+    def _update_task_tree_collection(self, task_tree: Tree):
+        self.job_tree_collection.update({task_tree.identifier: task_tree})
+        print(f"job tree {task_tree.identifier} added to orchestrator")
+        task_tree.show()
 
     @staticmethod
-    def _get_thread_from_tree_node(node: Node):
-        data = node.data
-        task_name = data['name_of_task']
-        scope = data['scope']
-        config = data['parameters_list']
-        return Task_Thread(task_name, scope, config)
+    def _create_queue_task_from_node(task_tree: Tree, node: Node):
+        return QueueTask(
+            tree_id=task_tree.identifier,
+            node=node
+        )
 
-    def jobs_in_running_job_pool(self) -> bool:
-        return bool(self.running_job_pool)
+    def _insert_task_to_ready_queue(self, task: QueueTask):
+        try:
+            self.ready_queue.put_nowait(task)
+            print(f"task {task.node.identifier} added to ready queue")
+        except Full:
+            raise RuntimeError("ready queue full: can not add task right now")
+
+    def trigger_task_in_ready_queue(self):
+        if self.ready_queue.empty():
+            print(f"no jobs in ready queue, will check again in {WAIT_TO_CHECK_READY_QUEUE_SECS} secs")
+            time.sleep(WAIT_TO_CHECK_READY_QUEUE_SECS)
+        while not self.ready_queue.empty():
+            task: QueueTask = self.ready_queue.get_nowait()
+            self.process_pool_executor.submit(self.run_module_with_task, task)
+        print("all task completed...")
+
+    def run_module_with_task(self, task: QueueTask):
+        print(f"running task {task.node.identifier} from ready queue")
+        tree_id = task.tree_id
+        task_node = task.node
+        task_data: TaskData = task_node.data
+        task_data.status = TaskStatusType.SUCCESS
+        runnable_task = RunnableModule(task_data)
+        child_tasks = self.job_tree_collection.get(tree_id).children(task_node.identifier)
+        # try:
+        #     runnable_task.run_module()
+        #     for child_task in child_tasks:
+        #         self._insert_task_to_ready_queue({"tree_id": tree_id, "node": child_task})
+        # except Exception as e:
+        #     if not task_node.data.get("isMandatory"):
+        #         for child_task in child_tasks:
+        #             self._insert_task_to_ready_queue({"tree_id": tree_id, "node": child_task})
+
+    # add to ready queue
 
 
-class Task_Thread(Thread):
-    def __init__(self, task_name, scope, config):
-        Thread.__init__(self)
-        self.task_name = task_name
-        self.scope = scope
-        self.config = config
+class RunnableModule:
+    def __init__(self, task_data: TaskData):
+        self.task_name = task_data.task_name
+        self.scope = task_data.scope
+        self.isMandatory = task_data.isMandatory
+        self.parameters = task_data.parameters
 
-    def run(self) -> None:
-        self.start_module_on_edennet(self.task_name, self.scope, self.config)
-
-    @staticmethod
-    def start_module_on_edennet(name, scope, config):
+    def run_module(self):
         current_time = datetime.now().strftime('%H:%M:%S')
-        print(f"starting {name} module at {current_time} with scope of cells {scope} and config {config}")
-        time.sleep(random.randint(30, 60))
-        print(f"completed {name} module at {current_time} with scope of cells {scope} and config {config}")
+        print(f"starting module {self.task_name} module at {current_time} with scope of cells {self.scope} and config {self.parameters}")
+        time.sleep(random.randint(1, 20))
+        print(f"completed module {self.task_name} module at {current_time} with scope of cells {self.scope} and config {self.parameters}")

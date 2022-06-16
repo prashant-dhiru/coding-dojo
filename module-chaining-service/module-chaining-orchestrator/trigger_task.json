@@ -43,5 +43,50 @@
         }
       ]
     }
+  },
+  "taskChain2":{
+    "taskChainId": "TC002",
+    "task": {
+      "task_name": "SOME_MODULE",
+      "scope": "CELL1, CELL2",
+      "isMandatory": true,
+      "parameters": {
+        "param1": "value1"
+      },
+      "children": [
+        {
+          "task": {
+            "task_name": "PRACH",
+            "scope": "CELL1, CELL2",
+            "isMandatory": true,
+            "parameters": {
+              "param1": "value1"
+            }
+          }
+        },
+        {
+          "task": {
+            "task_name": "CCCO",
+            "scope": "CELL1, CELL2",
+            "isMandatory": true,
+            "parameters": {
+              "param1": "value1"
+            },
+            "children": [
+              {
+                "task": {
+                  "task_name": "ANR",
+                  "scope": "CELL1, CELL2",
+                  "isMandatory": true,
+                  "parameters": {
+                    "param1": "value1"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
   }
 }
